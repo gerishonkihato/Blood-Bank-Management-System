@@ -1,0 +1,11 @@
+# Redirect all HTTP requests to HTTPS
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # If behind a proxy that sets X-Forwarded-Proto, allow it too
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes

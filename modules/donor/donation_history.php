@@ -54,46 +54,6 @@ if ($donor && !empty($donor['donorId'])) {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
         
-        .header {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .header h1 { font-size: 1.8rem; }
-        .header-nav {
-            display: flex;
-            gap: 15px;
-        }
-        .header-nav a {
-            color: white;
-            text-decoration: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.2);
-            transition: all 0.3s;
-        }
-        .header-nav a:hover {
-            background: rgba(255,255,255,0.4);
-        }
-        .user-info { text-align: right; }
-        .user-info span { display: block; font-size: 0.9rem; }
-        .logout-btn {
-            display: inline-block;
-            margin-top: 8px;
-            padding: 8px 20px;
-            background: #e74c3c;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        .logout-btn:hover { background: #c0392b; }
-        
         .container { max-width: 1200px; margin: 0 auto; padding: 30px; }
         
         .stats-grid {
@@ -152,27 +112,12 @@ if ($donor && !empty($donor['donorId'])) {
         
         @media (max-width: 768px) {
             .stats-grid { grid-template-columns: 1fr; }
-            .header { flex-direction: column; gap: 15px; }
         }
     </style>
 </head>
-<body>
-    <div class="header">
-        <div>
-            <h1>📋 Donation History</h1>
-            <small>Your complete donation record</small>
-        </div>
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <div class="header-nav">
-                <a href="dashboard.php">← Back to Dashboard</a>
-            </div>
-            <div class="user-info">
-                <span><strong><?php echo htmlspecialchars($username); ?></strong></span>
-                <a href="../../logout.php" class="logout-btn">🚪 Logout</a>
-            </div>
-        </div>
-    </div>
-    
+<body class="has-sidebar">
+    <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
+    <div class="main-content">
     <div class="container">
         <?php if ($donor): ?>
             <!-- Statistics -->
@@ -180,15 +125,12 @@ if ($donor && !empty($donor['donorId'])) {
                 <div class="stat-card">
                     <h3>Total Donations</h3>
                     <div class="value"><?php echo $donationStats['total']; ?></div>
-                </div>
                 <div class="stat-card">
                     <h3>Units in Use</h3>
                     <div class="value"><?php echo $donationStats['totalUnits']; ?></div>
-                </div>
                 <div class="stat-card">
                     <h3>Blood Type</h3>
                     <div class="value" style="font-size: 2rem;"><?php echo htmlspecialchars($donor['bloodGroup'] . $donor['rhFactor']); ?></div>
-                </div>
             </div>
             
             <!-- Donation History Table -->
@@ -239,7 +181,6 @@ if ($donor && !empty($donor['donorId'])) {
                     <p>Your donor profile is not complete.</p>
                     <p style="margin-top: 15px;"><a href="register.php" style="color: #27ae60; text-decoration: none; font-weight: 600;">Complete your registration →</a></p>
                 </div>
-            </div>
         <?php endif; ?>
     </div>
 </body>

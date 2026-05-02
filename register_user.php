@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $userId = uniqid('USR-', true);
             $insert = $conn->prepare("INSERT INTO users (userId, username, passwordHash, role) VALUES (?, ?, ?, ?)");
             $insert->execute([$userId, $username, $hash, $selectedRole]);
-            $message = 'Account created; you may now <a href="index.php?role=' . htmlspecialchars($selectedRole) . '">login</a>.';
+            $message = 'Account created successfully. Redirecting to login...';
         }
     }
 }
@@ -106,5 +106,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </main>
 
     <script src="assets/js/app.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var successMsg = document.querySelector('.message.success');
+        if (successMsg) {
+            setTimeout(function() {
+                window.location.href = 'index.php<?php echo $role ? '?role=' . urlencode($role) : ''; ?>';
+            }, 2000);
+        }
+    });
+    </script>
 </body>
 </html>
+

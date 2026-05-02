@@ -56,18 +56,9 @@ if ($donor) {
     <title>Donor Dashboard - KNBTS</title>
     <link rel="stylesheet" href="../../assets/css/style.css">
 </head>
-<body>
-    <div class="header">
-        <div>
-            <h1>🩸 Donor Dashboard</h1>
-            <small>Thank you for saving lives</small>
-        </div>
-        <div class="user-info">
-            <span><strong><?php echo htmlspecialchars($username); ?></strong></span>
-            <a href="../../logout.php" class="logout-btn">🚪 Logout</a>
-        </div>
-    </div>
-    
+<body class="has-sidebar">
+    <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
+    <div class="main-content">
     <div class="dashboard-container">
         <div class="container">
             <div class="profile-card">
@@ -90,7 +81,6 @@ if ($donor) {
                             <label>Last Donation</label>
                             <value><?php echo $donor['lastDonationDate'] ? date('M d, Y', strtotime($donor['lastDonationDate'])) : 'Never'; ?></value>
                         </div>
-                    </div>
                     
                     <div class="action-buttons">
                         <a href="register.php" class="btn btn-primary">📝 Update Information</a>
@@ -127,7 +117,6 @@ if ($donor) {
                     </table>
                 <?php endif; ?>
             </div>
-        </div>
     </div>
 </body>
 </html>

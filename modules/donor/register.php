@@ -7,7 +7,6 @@ require_once __DIR__ . '/../../config/https.php';
 
 // Check if user is logged in AND is a Donor
 if (!isset($_SESSION['userId']) || $_SESSION['role'] != 'DONOR') { 
-    // Redirect to login if not authorized
     header("Location: ../../index.php"); 
     exit; 
 }
@@ -22,6 +21,31 @@ $sec = new SecurityService();
 $audit = new AuditLog();
 $message = "";
 $error = "";
+
+// Pre-fill defaults
+$fullNameValue = '';
+$phoneValue = '';
+$bloodGroupValue = '';
+$rhFactorValue = '+';
+
+// Fetch existing donor data for pre-filling
+$userId = $_SESSION['userId'];
+try {
+    $db = new Database();
+    $conn = $db->getConnection();
+    $checkStmt = $conn->prepare("SELECT encryptedName, encryptedPhone, bloodGroup, rhFactor FROM donors WHERE userId = ?");
+    $checkStmt->execute([$userId]);
+    $existingDonor = $checkStmt->fetch();
+    if ($existingDonor) {
+        $fullNameValue = $sec->decrypt($existingDonor['encryptedName']);
+        $phoneValue = $sec->decrypt($existingDonor['encryptedPhone']);
+        $bloodGroupValue = $existingDonor['bloodGroup'];
+        $rhFactorValue = $existingDonor['rhFactor'];
+    }
+} catch (Exception $e) {
+    // Silently fail pre-fill; user can still submit
+    error_log("Donor pre-fill error: " . $e->getMessage());
+}
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -44,10 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $encryptedName = $sec->encrypt($fullName);
         $encryptedPhone = $sec->encrypt($phone);
         
-        // 3. Generate unique donor ID (only for new records)
-        $userId = $_SESSION['userId'];
-        
-        // 4. Insert or update (upsert) the donor record
+        // 3. Insert or update (upsert) the donor record
         $checkStmt = $conn->prepare("SELECT donorId FROM donors WHERE userId = ?");
         $checkStmt->execute([$userId]);
         $existing = $checkStmt->fetch();
@@ -60,7 +81,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             );
             $update->execute([$encryptedName, $encryptedPhone, $bloodGroup, $rhFactor, $userId]);
             $audit->log($userId, 'DONOR_UPDATED', $donorId);
-            $message = "✅ Information updated successfully!";
         } else {
             $donorId = uniqid('DNR-', true);
             $stmt = $conn->prepare(
@@ -69,8 +89,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             );
             $stmt->execute([$donorId, $userId, $encryptedName, $encryptedPhone, $bloodGroup, $rhFactor]);
             $audit->log($userId, 'DONOR_REGISTERED', $donorId);
-            $message = "✅ Data encrypted & stored successfully!";
         }
+        
+        $message = "✅ Donor profile saved successfully.";
         
     } catch (Exception $e) {
         $error = "❌ Error: " . $e->getMessage();
@@ -85,72 +106,69 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Donor Registration - KNBTS</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { background: #28a745; color: white; padding: 10px 20px; border: none; cursor: pointer; }
-        button:hover { background: #218838; }
-        .message { padding: 10px; margin: 10px 0; border-radius: 4px; }
-        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        .back-link { display: inline-block; margin-top: 20px; color: #007bff; text-decoration: none; }
-    </style>
+    <link rel="stylesheet" href="../../assets/css/style.css">
 </head>
-<body>
-    <h2>🩸 Donor Registration</h2>
-    
-    <!-- Display Messages -->
-    <?php if ($message): ?>
-        <div class="message success"><?php echo $message; ?></div>
-    <?php endif; ?>
-    <?php if ($error): ?>
-        <div class="message error"><?php echo $error; ?></div>
-    <?php endif; ?>
-    
-    <!-- Encryption Info Box (For Research Demonstration) -->
-    <div class="message info">
-        <strong>🔐 Security Notice:</strong> Your personal data (Name, Phone) will be encrypted using AES-256 before storage.
+<body class="has-sidebar">
+    <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
+    <div class="main-content">
+        <div class="dashboard-container">
+            <div class="register-box">
+                <h2>🩸 Donor Registration</h2>
+                
+                <!-- Display Messages -->
+                <?php if ($message): ?>
+                    <div class="message success"><?php echo $message; ?></div>
+                <?php endif; ?>
+                <?php if ($error): ?>
+                    <div class="message error"><?php echo $error; ?></div>
+                <?php endif; ?>
+                
+                <form method="POST" action="">
+                    <div class="form-group">
+                        <label for="fullName">Full Name *</label>
+                        <input type="text" id="fullName" name="fullName" required placeholder="Enter your full name" value="<?php echo htmlspecialchars($fullNameValue); ?>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Phone Number *</label>
+                        <input type="tel" id="phone" name="phone" required placeholder="e.g., 0712345678" pattern="[0-9]{10}" value="<?php echo htmlspecialchars($phoneValue); ?>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bloodGroup">Blood Group *</label>
+                        <select id="bloodGroup" name="bloodGroup" required>
+                            <option value="">-- Select --</option>
+                            <option value="A" <?php if ($bloodGroupValue === 'A') echo 'selected'; ?>>A</option>
+                            <option value="B" <?php if ($bloodGroupValue === 'B') echo 'selected'; ?>>B</option>
+                            <option value="AB" <?php if ($bloodGroupValue === 'AB') echo 'selected'; ?>>AB</option>
+                            <option value="O" <?php if ($bloodGroupValue === 'O') echo 'selected'; ?>>O</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rhFactor">Rh Factor</label>
+                        <select id="rhFactor" name="rhFactor">
+                            <option value="+" <?php if ($rhFactorValue === '+') echo 'selected'; ?>>Positive (+)</option>
+                            <option value="-" <?php if ($rhFactorValue === '-') echo 'selected'; ?>>Negative (-)</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success" style="width: 100%;">Create/Update Profile</button>
+                </form>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <!-- Registration Form -->
-    <form method="POST" action="">
-        <div class="form-group">
-            <label for="fullName">Full Name *</label>
-            <input type="text" id="fullName" name="fullName" required placeholder="Enter your full name">
-        </div>
-        
-        <div class="form-group">
-            <label for="phone">Phone Number *</label>
-            <input type="tel" id="phone" name="phone" required placeholder="e.g., 0712345678" pattern="[0-9]{10}">
-        </div>
-        
-        <div class="form-group">
-            <label for="bloodGroup">Blood Group *</label>
-            <select id="bloodGroup" name="bloodGroup" required>
-                <option value="">-- Select --</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="AB">AB</option>
-                <option value="O">O</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label for="rhFactor">Rh Factor</label>
-            <select id="rhFactor" name="rhFactor">
-                <option value="+">Positive (+)</option>
-                <option value="-">Negative (-)</option>
-            </select>
-        </div>
-        
-        <button type="submit">Submit Encrypted Registration</button>
-    </form>
-    
-    <a href="dashboard.php" class="back-link">← Back to Dashboard</a>
-    <br>
-    <a href="../../logout.php" class="back-link" style="color: #dc3545;">Logout</a>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var successMsg = document.querySelector('.message.success');
+        if (successMsg) {
+            setTimeout(function() {
+                window.location.href = 'dashboard.php';
+            }, 2000);
+        }
+    });
+    </script>
 </body>
 </html>
+

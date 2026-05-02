@@ -109,151 +109,118 @@ $audit->log($_SESSION['userId'], 'ADMIN_ACTIVE_DONORS_ACCESS', $_SESSION['userId
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Active Donors & Inventory - KNBTS Admin</title>
     <link rel="stylesheet" href="../../assets/css/style.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
-        .header {
-            background: linear-gradient(135deg, #1a5276, #2980b9);
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header-nav a { color: white; margin-right: 12px; text-decoration: none; font-weight: 600; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 30px; }
-        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        .card h2 { margin-bottom: 15px; }
-        .message { margin-bottom: 20px; padding: 15px; border-radius: 4px; }
-        .message.success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
-        .message.error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e9ecef; }
-        th { background: #f8f9fa; }
-        .status-available { color: #155724; background: #d4edda; padding: 3px 8px; border-radius: 12px; }
-        .status-used { color: #0c5460; background: #d1ecf1; padding: 3px 8px; border-radius: 12px; }
-        .status-collected { color: #856404; background: #fff3cd; padding: 3px 8px; border-radius: 12px; }
-        .status-inactive { color: #721c24; background: #f8d7da; padding: 3px 8px; border-radius: 12px; }
-    </style>
 </head>
-<body>
-    <div class="header">
-        <div>
-            <h1>🩸 Active Donors / Inventory</h1>
-            <div style="margin-top: 5px; font-size: 0.95rem;">Admin view: add donation records and update inventory at once.</div>
-        </div>
-        <div>
-            <a class="logout-btn" href="../../logout.php">🚪 Logout</a>
-        </div>
-    </div>
-    <div class="container">
-        <?php if ($message): ?>
-            <div class="message <?php echo $messageType; ?>"><?php echo htmlspecialchars($message); ?></div>
-        <?php endif; ?>
+<body class="has-sidebar">
+    <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
+    <div class="main-content">
+        <div class="dashboard-container">
+            <?php if ($message): ?>
+                <div class="message <?php echo $messageType; ?>"><?php echo htmlspecialchars($message); ?></div>
+            <?php endif; ?>
 
-        <div class="card">
-            <h2>📌 Active Donors</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Donor</th>
-                        <th>Donor ID</th>
-                        <th>Blood Group</th>
-                        <th>Last Donation</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($activeDonors as $d): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($d['username']); ?></td>
-                        <td><?php echo htmlspecialchars($d['donorId']); ?></td>
-                        <td><?php echo htmlspecialchars($d['bloodGroup'] . $d['rhFactor']); ?></td>
-                        <td><?php echo $d['lastDonationDate'] ? date('M d, Y', strtotime($d['lastDonationDate'])) : 'Never'; ?></td>
-                        <td><span class="status-available"><?php echo htmlspecialchars($d['status']); ?></span></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+            <div class="card">
+                <h2> Active Donors</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Donor</th>
+                            <th>Donor ID</th>
+                            <th>Blood Group</th>
+                            <th>Last Donation</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($activeDonors as $d): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($d['username']); ?></td>
+                            <td><?php echo htmlspecialchars($d['donorId']); ?></td>
+                            <td><?php echo htmlspecialchars($d['bloodGroup'] . $d['rhFactor']); ?></td>
+                            <td><?php echo $d['lastDonationDate'] ? date('M d, Y', strtotime($d['lastDonationDate'])) : 'Never'; ?></td>
+                            <td><span class="status-badge status-available"><?php echo htmlspecialchars($d['status']); ?></span></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="card">
-            <h2>➕ Add Donation for Active Donor</h2>
-            <form method="POST">
-                <input type="hidden" name="donorId" value="<?php echo count($activeDonors) ? htmlspecialchars($activeDonors[0]['donorId']) : ''; ?>">
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;align-items:end;">
-                    <div>
-                        <label for="donorId">Select Donor</label><br>
-                        <select id="donorId" name="donorId" style="width:100%;padding:8px;border:1px solid #ccc;" required>
-                            <option value="">Choose donor</option>
-                            <?php foreach ($activeDonors as $d): ?>
-                                <option value="<?php echo htmlspecialchars($d['donorId']); ?>"><?php echo htmlspecialchars($d['username'] . ' (' . $d['bloodGroup'] . $d['rhFactor'] . ')'); ?></option>
-                            <?php endforeach; ?>
-                        </select>
+            <div class="form-card">
+                <h2>🩸 Add Donation for Active Donor</h2>
+                <form method="POST" id="donationForm">
+                    <div class="inventory-form-grid">
+                        <div class="form-group autocomplete-wrapper">
+                            <label for="donorSearch">Select Donor</label>
+                            <input type="text" id="donorSearch" class="autocomplete-input" placeholder="Type donor name or blood type..." autocomplete="off" required>
+                            <input type="hidden" id="donorId" name="donorId">
+                            <div id="donorSuggestions" class="autocomplete-dropdown"></div>
+                            <script>
+                                window.activeDonors = <?php echo json_encode(array_map(function($d) {
+                                    return [
+                                        'donorId' => $d['donorId'],
+                                        'username' => $d['username'],
+                                        'bloodGroup' => $d['bloodGroup'],
+                                        'rhFactor' => $d['rhFactor']
+                                    ];
+                                }, $activeDonors)); ?>;
+                            </script>
+                        </div>
+                        <div class="form-group">
+                            <label for="bloodGroup">Blood Type</label>
+                            <input type="text" id="bloodGroup" name="bloodGroup" readonly required placeholder="Auto-generated on donor selection">
+                        </div>
+                        <div class="form-group">
+                            <label for="collectionDate">Collection Date</label>
+                            <input type="date" id="collectionDate" name="collectionDate" value="<?php echo date('Y-m-d'); ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="units">Units</label>
+                            <input type="number" id="units" name="units" min="1" value="1" required>
+                        </div>
                     </div>
-                    <div>
-                        <label for="bloodGroup">Blood Type</label><br>
-                        <select id="bloodGroup" name="bloodGroup" style="width:100%;padding:8px;border:1px solid #ccc;" required>
-                            <option value="">Select</option>
-                            <option value="A+">A+</option>
-                            <option value="A-">A-</option>
-                            <option value="B+">B+</option>
-                            <option value="B-">B-</option>
-                            <option value="AB+">AB+</option>
-                            <option value="AB-">AB-</option>
-                            <option value="O+">O+</option>
-                            <option value="O-">O-</option>
-                        </select>
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-success">Add Donation + Update Inventory</button>
                     </div>
-                    <div>
-                        <label for="collectionDate">Collection Date</label><br>
-                        <input type="date" id="collectionDate" name="collectionDate" value="<?php echo date('Y-m-d'); ?>" style="width:100%;padding:8px;border:1px solid #ccc;" required>
-                    </div>
-                    <div>
-                        <label for="units">Units</label><br>
-                        <input type="number" id="units" name="units" min="1" value="1" style="width:100%;padding:8px;border:1px solid #ccc;" required>
-                    </div>
-                    <div>
-                        <button type="submit" class="btn btn-success" style="width:100%; margin-top: 5px;">Add Donation + Update Inventory</button>
-                    </div>
+                </form>
+            </div>
+
+            <div class="content-grid">
+                <div class="card">
+                    <h2>Inventory Snapshot</h2>
+                    <table>
+                        <thead><tr><th>Blood Type</th><th>Units Available</th><th>Last Updated</th></tr></thead>
+                        <tbody>
+                        <?php foreach ($inventory as $inv): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($inv['bloodType']); ?></td>
+                            <td><?php echo htmlspecialchars($inv['unitsAvailable']); ?></td>
+                            <td><?php echo date('M d, H:i', strtotime($inv['lastUpdated'])); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
-            </form>
-        </div>
 
-        <div class="card">
-            <h2>📦 Inventory Snapshot</h2>
-            <table>
-                <thead><tr><th>Blood Type</th><th>Units Available</th><th>Last Updated</th></tr></thead>
-                <tbody>
-                <?php foreach ($inventory as $inv): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($inv['bloodType']); ?></td>
-                    <td><?php echo htmlspecialchars($inv['unitsAvailable']); ?></td>
-                    <td><?php echo date('M d, H:i', strtotime($inv['lastUpdated'])); ?></td>
-                </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+                <div class="card">
+                    <h2> Recent Donation Records</h2>
+                    <table>
+                        <thead><tr><th>Unit ID</th><th>Donor</th><th>Blood</th><th>Collected</th><th>Status</th></tr></thead>
+                        <tbody>
+                        <?php foreach ($recentDonations as $rec): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($rec['unitId']); ?></td>
+                            <td><?php echo htmlspecialchars($rec['username'] ?: $rec['donorId']); ?></td>
+                            <td><?php echo htmlspecialchars($rec['bloodGroup'] . $rec['rhFactor']); ?></td>
+                            <td><?php echo date('M d, Y', strtotime($rec['collectionDate'])); ?></td>
+                            <td><span class="status-badge status-<?php echo strtolower($rec['status']); ?>"><?php echo htmlspecialchars($rec['status']); ?></span></td>
+                        </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-
-        <div class="card">
-            <h2>🧬 Recent Donation Records</h2>
-            <table>
-                <thead><tr><th>Unit ID</th><th>Donor</th><th>Blood</th><th>Collected</th><th>Status</th></tr></thead>
-                <tbody>
-                <?php foreach ($recentDonations as $rec): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($rec['unitId']); ?></td>
-                    <td><?php echo htmlspecialchars($rec['username'] ?: $rec['donorId']); ?></td>
-                    <td><?php echo htmlspecialchars($rec['bloodGroup'] . $rec['rhFactor']); ?></td>
-                    <td><?php echo date('M d, Y', strtotime($rec['collectionDate'])); ?></td>
-                    <td><span class="status-<?php echo strtolower($rec['status']); ?>"><?php echo htmlspecialchars($rec['status']); ?></span></td>
-                </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-
     </div>
+    <script src="../../assets/js/app.js"></script>
 </body>
 </html>
+

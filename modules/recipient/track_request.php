@@ -48,7 +48,10 @@ if ($recipient) {
         .status-rejected { color: #721c24; }
     </style>
 </head>
-<body>
+<body class="has-sidebar">
+    <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
+    <div class="main-content">
+
     <h2>My Blood Requests</h2>
     <?php if (empty($requests)): ?>
         <p>No requests found.</p>
@@ -65,11 +68,12 @@ if ($recipient) {
                     <td><?php echo (int)$r['quantity']; ?></td>
                     <td class="status-<?php echo strtolower($r['status']); ?>"><?php echo htmlspecialchars($r['status']); ?></td>
                     <td><?php echo date('M d, Y H:i', strtotime($r['requestTimestamp'])); ?></td>
+                    <tr></tr>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
     <?php endif; ?>
-    <p><a href="dashboard.php">← Back to Dashboard</a></p>
+    </div>
 </body>
 </html>

@@ -1,5 +1,5 @@
-CREATE DATABASE knbts_db;
-USE knbts_db;
+CREATE DATABASE knbts_db2;
+USE knbts_db2;
 
 -- Users Table (Base for all roles)
 CREATE TABLE users (

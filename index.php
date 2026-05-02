@@ -47,6 +47,7 @@ $currentPage = $_GET['page'] ?? 'home';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KNBTS - Secure Blood Banking System</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
 </head>
 <body>
     <header>
@@ -64,8 +65,39 @@ $currentPage = $_GET['page'] ?? 'home';
     <!-- HOME PAGE -->
     <section class="page-section active">
         <div class="page-area">
-            <div class="page-image">
-                <img src="https://images.unsplash.com/photo-1584308666744-24d5f400f6f5?w=1200&h=650&fit=crop" alt="Blood donation scene">
+            <div id="myCarousel" class="carousel slide" data-ride="carousel">
+                <!-- Indicators -->
+                <ol class="carousel-indicators">
+                    <li data-target="#myCarousel" data-slide-to="0" class="active"></li>
+                    <li data-target="#myCarousel" data-slide-to="1"></li>
+                    <li data-target="#myCarousel" data-slide-to="2"></li>
+                </ol>
+
+                <!-- Wrapper for slides -->
+                <div class="carousel-inner">
+                    <div class="item active">
+                        <div class="fill" style="background-image:url('assets/images/s11.jpeg');"></div>
+                        <div class="carousel-caption"></div>
+                    </div>
+                    <div class="item">
+                        <div class="fill" style="background-image:url('assets/images/s2.jpg');"></div>
+                        <div class="carousel-caption"></div>
+                    </div>
+                    <div class="item">
+                        <div class="fill" style="background-image:url('assets/images/s3.jpg');"></div>
+                        <div class="carousel-caption"></div>
+                    </div>
+                </div>
+
+                <!-- Left and right controls -->
+                <a class="left carousel-control" href="#myCarousel" data-slide="prev">
+                    <span class="glyphicon glyphicon-chevron-left"></span>
+                    <span class="sr-only">Previous</span>
+                </a>
+                <a class="right carousel-control" href="#myCarousel" data-slide="next">
+                    <span class="glyphicon glyphicon-chevron-right"></span>
+                    <span class="sr-only">Next</span>
+                </a>
             </div>
             <div class="page-text">
                 <h2>Secure Blood Banking System</h2>
@@ -125,7 +157,7 @@ $currentPage = $_GET['page'] ?? 'home';
         <div class="container">
             <div class="scene-content">
                 <div class="scene-image">
-                    <img src="assets/images/blood-donation.jpg" alt="Blood donation process - donor giving blood">
+                    <img src="assets/images/s11.jpeg" alt="Blood donation process - donor giving blood">
                 </div>
                 <div class="scene-text">
                     <h2>Your Donation Saves Lives</h2>
@@ -184,7 +216,7 @@ $currentPage = $_GET['page'] ?? 'home';
     <section class="page-section active">
         <div class="page-area">
             <div class="page-image">
-                <img src="https://images.unsplash.com/photo-1587759982536-0add78a7c524?w=1200&h=650&fit=crop" alt="About KNBTS">
+                <img src="assets/images/s11.jpeg" alt="About KNBTS">
             </div>
             <div class="page-text">
                 <h2>About KNBTS</h2>
@@ -277,7 +309,7 @@ $currentPage = $_GET['page'] ?? 'home';
     <section class="page-section active">
         <div class="page-area">
             <div class="page-image">
-                <img src="https://images.unsplash.com/photo-1551218808-94e220e084d2?w=1200&h=650&fit=crop" alt="Services KNBTS">
+                <img src="assets/images/s3.jpg" alt="Services KNBTS">
             </div>
             <div class="page-text">
                 <h2>Our Services</h2>
@@ -372,9 +404,9 @@ $currentPage = $_GET['page'] ?? 'home';
                 <h3 id="dropdownTitle">Role Login</h3>
                 <button type="button" class="close-dropdown" onclick="hideLoginDropdown()">✕</button>
             </div>
-            <?php if ($error): ?>
-                <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
-            <?php endif; ?>
+            <div id="loginErrorContainer" class="error-message" style="display: <?php echo $error ? 'block' : 'none'; ?>;">
+                <?php echo htmlspecialchars($error); ?>
+            </div>
             <form id="dropdownLoginForm" method="POST" action="index.php?page=<?php echo htmlspecialchars($currentPage); ?>">
                 <input type="hidden" name="role" id="roleInput" value="">
                 <div class="form-group">
@@ -396,6 +428,9 @@ $currentPage = $_GET['page'] ?? 'home';
         </div>
     </footer>
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="assets/js/app.js"></script>
     <script>
         function showLoginDropdown(role) {
             const dropdown = document.getElementById('loginDropdown');

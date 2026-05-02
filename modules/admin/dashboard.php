@@ -120,26 +120,9 @@ $inventory = $inventoryStmt->fetchAll();
     <title>Administrator Dashboard - KNBTS</title>
     <link rel="stylesheet" href="../../assets/css/style.css">
 </head>
-<body>
-    <div class="header">
-        <div>
-            <h1>🛡️ KNBTS Administrator Dashboard</h1>
-            <small>Secure Blood Bank Management System</small>
-        </div>
-        <div>
-            <div class="navigation-links">
-                <a href="dashboard.php" class="nav-btn">📊 Dashboard</a>
-                <a href="inventory.php" class="nav-btn">🩸 Inventory</a>
-                <a href="active_donors.php" class="nav-btn">👥 Active Donors</a>
-            </div>
-            <div class="user-info">
-                <span><strong>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?></strong></span>
-                <span>Role: <?php echo $_SESSION['role']; ?></span>
-                <a href="../../logout.php" class="logout-btn">🚪 Logout</a>
-            </div>
-        </div>
-    </div>
-    
+<body class="has-sidebar">
+    <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
+    <div class="main-content">
     <div class="dashboard-container">
         <div class="container">
         <!-- Security Notice -->
@@ -233,6 +216,7 @@ $inventory = $inventoryStmt->fetchAll();
                 <?php endforeach; ?>
             </div>
         </div>
+    </div>
     </div>
 </body>
 </html>

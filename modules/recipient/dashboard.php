@@ -64,18 +64,10 @@ if ($recipient) {
     <title>Recipient Dashboard - KNBTS</title>
     <link rel="stylesheet" href="../../assets/css/style.css">
 </head>
-<body>
-    <div class="header">
-        <div>
-            <h1>🏥 Recipient Dashboard</h1>
-            <small>Blood Request Management</small>
-        </div>
-        <div class="user-info">
-            <span><strong><?php echo htmlspecialchars($username); ?></strong></span>
-            <a href="../../logout.php" class="logout-btn">🚪 Logout</a>
-        </div>
-    </div>
+<body class="has-sidebar">
+    <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
     
+        <div class="main-content">
     <div class="dashboard-container">
         <div class="container">
             <div class="card">
@@ -148,6 +140,7 @@ if ($recipient) {
                 <?php endif; ?>
             </div>
         </div>
+    </div>
     </div>
 </body>
 </html>

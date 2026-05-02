@@ -56,42 +56,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Request Blood - KNBTS</title>
     <link rel="stylesheet" href="../../assets/css/style.css">
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { background: #3498db; color: white; padding: 10px 20px; border: none; cursor: pointer; }
-        button:hover { background: #2980b9; }
-        .message { padding: 10px; margin: 10px 0; border-radius: 4px; }
-        .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
-    </style>
+
 </head>
-<body>
-    <h2>Request Blood</h2>
-    <?php if ($message): ?><div class="message success"><?php echo $message; ?></div><?php endif; ?>
-    <?php if ($error): ?><div class="message error"><?php echo $error; ?></div><?php endif; ?>
-    <form method="POST">
-        <div class="form-group">
-            <label>Blood Group</label>
-            <select name="bloodGroup" required>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="AB">AB</option>
-                <option value="O">O</option>
-            </select>
-            <select name="rhFactor">
-                <option value="+">+</option>
-                <option value="-">-</option>
-            </select>
+<body class="has-sidebar">
+    <?php include __DIR__ . '/../../includes/sidebar.php'; ?>
+    <div class="main-content">
+        <div class="dashboard-container">
+            <div class="form-card">
+                <h2>Request Blood</h2>
+                <?php if ($message): ?><div class="message success"><?php echo $message; ?></div><?php endif; ?>
+                <?php if ($error): ?><div class="message error"><?php echo $error; ?></div><?php endif; ?>
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="bloodGroup">Blood Group</label>
+                        <select id="bloodGroup" name="bloodGroup" required>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="AB">AB</option>
+                            <option value="O">O</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="rhFactor">Rh Factor</label>
+                        <select id="rhFactor" name="rhFactor">
+                            <option value="+">Positive (+)</option>
+                            <option value="-">Negative (-)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="quantity">Quantity (units)</label>
+                        <input type="number" id="quantity" name="quantity" min="1" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Request</button>
+                </form>
+                
+            </div>
         </div>
-        <div class="form-group">
-            <label>Quantity (units)</label>
-            <input type="number" name="quantity" min="1" required>
-        </div>
-        <button type="submit">Submit</button>
-    </form>
-    <p><a href="dashboard.php">← Back to Dashboard</a></p>
+</div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var successMsg = document.querySelector('.message.success');
+        if (successMsg) {
+            setTimeout(function() {
+                window.location.href = 'dashboard.php';
+            }, 2000);
+        }
+    });
+    </script>
 </body>
 </html>

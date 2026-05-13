@@ -86,26 +86,76 @@ try {
     $stats['totalBloodUnits'] = 0;
 }
 
-// Fetch recent audit logs
-$auditStmt = $conn->query("
-    SELECT a.*, u.username 
-    FROM audit_log a 
-    LEFT JOIN users u ON a.userId = u.userId 
-    ORDER BY a.timestamp DESC 
-    LIMIT 10
-");
+// Fetch paginated audit logs
+$auditPage = isset($_GET['audit_page']) ? max(1, intval($_GET['audit_page'])) : 1;
+$auditPageSize = 25;
+$auditOffset = ($auditPage - 1) * $auditPageSize;
+
+try {
+    $countStmt = $conn->query("SELECT COUNT(*) AS total FROM audit_log");
+    $totalAuditLogs = $countStmt->fetch()['total'] ?? 0;
+} catch (PDOException $e) {
+    error_log("Audit log count failed: " . $e->getMessage());
+    $totalAuditLogs = 0;
+}
+
+$auditPageCount = max(1, (int) ceil($totalAuditLogs / $auditPageSize));
+
+$auditStmt = $conn->prepare("SELECT a.*, u.username FROM audit_log a LEFT JOIN users u ON a.userId = u.userId ORDER BY a.timestamp DESC LIMIT ? OFFSET ?");
+$auditStmt->bindValue(1, $auditPageSize, PDO::PARAM_INT);
+$auditStmt->bindValue(2, $auditOffset, PDO::PARAM_INT);
+$auditStmt->execute();
 $auditLogs = $auditStmt->fetchAll();
 
-// Fetch pending blood requests
-$requestsStmt = $conn->query("
-    SELECT r.*, u.username as recipientName, rec.hospitalName
-    FROM blood_requests r
-    JOIN recipients rec ON r.recipientId = rec.recipientId
-    JOIN users u ON rec.userId = u.userId
-    WHERE r.status = 'PENDING'
-    ORDER BY r.requestTimestamp DESC
-    LIMIT 5
-");
+// Fetch pending blood requests with search capability
+$searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
+$statusFilter = isset($_GET['status']) ? $_GET['status'] : 'PENDING';
+
+if ($searchTerm) {
+    $searchParam = '%' . $searchTerm . '%';
+    if ($statusFilter === 'ALL') {
+        $requestsStmt = $conn->prepare("
+            SELECT r.*, u.username as recipientName, rec.hospitalName
+            FROM blood_requests r
+            JOIN recipients rec ON r.recipientId = rec.recipientId
+            JOIN users u ON rec.userId = u.userId
+            WHERE u.username LIKE ? OR r.bloodGroup LIKE ? OR rec.hospitalName LIKE ?
+            ORDER BY r.requestTimestamp DESC
+        ");
+        $requestsStmt->execute([$searchParam, $searchParam, $searchParam]);
+    } else {
+        $requestsStmt = $conn->prepare("
+            SELECT r.*, u.username as recipientName, rec.hospitalName
+            FROM blood_requests r
+            JOIN recipients rec ON r.recipientId = rec.recipientId
+            JOIN users u ON rec.userId = u.userId
+            WHERE r.status = ? AND (u.username LIKE ? OR r.bloodGroup LIKE ? OR rec.hospitalName LIKE ?)
+            ORDER BY r.requestTimestamp DESC
+        ");
+        $requestsStmt->execute([$statusFilter, $searchParam, $searchParam, $searchParam]);
+    }
+} else {
+    if ($statusFilter === 'ALL') {
+        $requestsStmt = $conn->query("
+            SELECT r.*, u.username as recipientName, rec.hospitalName
+            FROM blood_requests r
+            JOIN recipients rec ON r.recipientId = rec.recipientId
+            JOIN users u ON rec.userId = u.userId
+            ORDER BY r.requestTimestamp DESC
+            LIMIT 20
+        ");
+    } else {
+        $requestsStmt = $conn->query("
+            SELECT r.*, u.username as recipientName, rec.hospitalName
+            FROM blood_requests r
+            JOIN recipients rec ON r.recipientId = rec.recipientId
+            JOIN users u ON rec.userId = u.userId
+            WHERE r.status = 'PENDING'
+            ORDER BY r.requestTimestamp DESC
+            LIMIT 20
+        ");
+    }
+}
 $pendingRequests = $requestsStmt->fetchAll();
 
 // Fetch inventory status
@@ -164,17 +214,35 @@ $inventory = $inventoryStmt->fetchAll();
         <div class="content-grid">
             <!-- Pending Requests -->
             <div class="card">
-                <h2>⏳ Pending Blood Requests</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px;">
+                    <h2 style="margin: 0;">⏳ Pending Blood Requests</h2>
+                    <form method="GET" style="display: flex; gap: 10px; flex: 1; max-width: 500px;">
+                        <input type="text" name="search" placeholder="Search by recipient, blood type, or hospital..." value="<?php echo htmlspecialchars($searchTerm); ?>" style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+                        <select name="status" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="PENDING" <?php echo $statusFilter === 'PENDING' ? 'selected' : ''; ?>>Pending</option>
+                            <option value="APPROVED" <?php echo $statusFilter === 'APPROVED' ? 'selected' : ''; ?>>Approved</option>
+                            <option value="REJECTED" <?php echo $statusFilter === 'REJECTED' ? 'selected' : ''; ?>>Rejected</option>
+                            <option value="ALL" <?php echo $statusFilter === 'ALL' ? 'selected' : ''; ?>>All</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary" style="padding: 8px 16px;">🔍 Search</button>
+                    </form>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="export_requests.php?format=csv&search=<?php echo urlencode($searchTerm); ?>&status=<?php echo urlencode($statusFilter); ?>" class="btn btn-success" style="padding: 8px 14px; text-decoration: none; font-size: 12px;">📥 CSV</a>
+                        <a href="export_requests.php?format=pdf&search=<?php echo urlencode($searchTerm); ?>&status=<?php echo urlencode($statusFilter); ?>" class="btn btn-info" style="padding: 8px 14px; text-decoration: none; font-size: 12px;">📄 PDF</a>
+                    </div>
+                </div>
                 <?php if (empty($pendingRequests)): ?>
-                    <p style="color: #7f8c8d; text-align: center; padding: 20px;">No pending requests</p>
+                    <p style="color: #7f8c8d; text-align: center; padding: 20px;">No requests found</p>
                 <?php else: ?>
                     <table>
                         <thead>
                             <tr>
                                 <th>Request ID</th>
                                 <th>Recipient</th>
+                                <th>Hospital</th>
                                 <th>Blood Type</th>
                                 <th>Quantity</th>
+                                <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -183,17 +251,23 @@ $inventory = $inventoryStmt->fetchAll();
                             <tr>
                                 <td><?php echo htmlspecialchars($req['requestId']); ?></td>
                                 <td><?php echo htmlspecialchars($req['recipientName']); ?></td>
+                                <td><?php echo htmlspecialchars($req['hospitalName']); ?></td>
                                 <td><?php echo htmlspecialchars($req['bloodGroup']); ?></td>
                                 <td><?php echo $req['quantity']; ?> units</td>
+                                <td><span class="status-badge status-<?php echo strtolower($req['status']); ?>"><?php echo htmlspecialchars($req['status']); ?></span></td>
                                 <td>
-                                    <form method="POST" style="display:inline">
-                                        <input type="hidden" name="requestId" value="<?php echo htmlspecialchars($req['requestId']); ?>">
-                                        <button type="submit" name="action" value="approve" class="btn btn-approve">✅ Approve</button>
-                                    </form>
-                                    <form method="POST" style="display:inline">
-                                        <input type="hidden" name="requestId" value="<?php echo htmlspecialchars($req['requestId']); ?>">
-                                        <button type="submit" name="action" value="reject" class="btn btn-reject">❌ Reject</button>
-                                    </form>
+                                    <?php if ($req['status'] === 'PENDING'): ?>
+                                        <form method="POST" style="display:inline">
+                                            <input type="hidden" name="requestId" value="<?php echo htmlspecialchars($req['requestId']); ?>">
+                                            <button type="submit" name="action" value="approve" class="btn btn-approve" style="padding: 4px 8px; font-size: 11px;">✅ Approve</button>
+                                        </form>
+                                        <form method="POST" style="display:inline">
+                                            <input type="hidden" name="requestId" value="<?php echo htmlspecialchars($req['requestId']); ?>">
+                                            <button type="submit" name="action" value="reject" class="btn btn-reject" style="padding: 4px 8px; font-size: 11px;">❌ Reject</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <span style="color: #7f8c8d; font-size: 12px;">No Actions</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -204,16 +278,49 @@ $inventory = $inventoryStmt->fetchAll();
             
             <!-- Recent Audit Logs -->
             <div class="card">
-                <h2>📋 Recent Activity</h2>
-                <?php foreach ($auditLogs as $log): ?>
-                <div class="audit-item">
-                    <div class="audit-action"><?php echo htmlspecialchars($log['action']); ?></div>
-                    <div class="audit-time">
-                        <?php echo htmlspecialchars($log['username'] ?? 'SYSTEM'); ?> | 
-                        <?php echo date('M d, H:i', strtotime($log['timestamp'])); ?>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 16px;">
+                    <h2>📋 Recent Activity</h2>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <a href="export_audit.php?format=csv" class="btn btn-success" style="padding: 8px 14px; text-decoration: none; font-size: 12px;">📥 CSV</a>
+                        <a href="export_audit.php?format=pdf" class="btn btn-info" style="padding: 8px 14px; text-decoration: none; font-size: 12px;">📄 PDF</a>
                     </div>
                 </div>
-                <?php endforeach; ?>
+                <?php if (empty($auditLogs)): ?>
+                    <p style="color: #7f8c8d; text-align: center; padding: 20px;">No audit activity has been recorded yet.</p>
+                <?php else: ?>
+                    <p style="margin: 0 0 10px; color: #555; font-size: 14px;">Showing page <?php echo $auditPage; ?> of <?php echo $auditPageCount; ?> — total <?php echo $totalAuditLogs; ?> records.</p>
+                    <table class="audit-table" style="width:100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left; padding: 8px; border-bottom: 1px solid #ddd;">Timestamp</th>
+                                <th style="text-align:left; padding: 8px; border-bottom: 1px solid #ddd;">User</th>
+                                <th style="text-align:left; padding: 8px; border-bottom: 1px solid #ddd;">Action</th>
+                                <th style="text-align:left; padding: 8px; border-bottom: 1px solid #ddd;">Target</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($auditLogs as $log): ?>
+                            <tr>
+                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #555;"><?php echo date('M d, Y H:i:s', strtotime($log['timestamp'])); ?></td>
+                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #333;"><?php echo htmlspecialchars($log['username'] ?? 'SYSTEM'); ?></td>
+                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #333;"><?php echo htmlspecialchars($log['action']); ?></td>
+                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #777;"><?php echo htmlspecialchars($log['targetId'] ?? '-'); ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <?php if ($auditPageCount > 1): ?>
+                        <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 16px;">
+                            <?php for ($page = 1; $page <= $auditPageCount; $page++): ?>
+                                <?php if ($page === $auditPage): ?>
+                                    <span style="padding: 8px 12px; background: #2c3e50; color: #fff; border-radius: 4px; font-size: 14px;"><?php echo $page; ?></span>
+                                <?php else: ?>
+                                    <a href="?audit_page=<?php echo $page; ?>" style="padding: 8px 12px; background: #f4f4f4; color: #333; border-radius: 4px; text-decoration: none; font-size: 14px;"><?php echo $page; ?></a>
+                                <?php endif; ?>
+                            <?php endfor; ?>
+                        </div>
+                    <?php endif; ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>

@@ -22,6 +22,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <a href="active_donors.php" class="sidebar-link <?php echo $currentPage === 'active_donors.php' ? 'active' : ''; ?>">
                 <span class="sidebar-icon">👥</span> Active Donors
             </a>
+            <a href="recipients.php" class="sidebar-link <?php echo $currentPage === 'recipients.php' ? 'active' : ''; ?>">
+                <span class="sidebar-icon">🏥</span> Recipients
+            </a>
+            <a href="admins.php" class="sidebar-link <?php echo $currentPage === 'admins.php' ? 'active' : ''; ?>">
+                <span class="sidebar-icon">🛡️</span> Admins
+            </a>
         <?php elseif ($role === 'DONOR'): ?>
             <a href="dashboard.php" class="sidebar-link <?php echo $currentPage === 'dashboard.php' ? 'active' : ''; ?>">
                 <span class="sidebar-icon">📊</span> Dashboard

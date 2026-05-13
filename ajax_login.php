@@ -3,6 +3,7 @@ require_once 'config/constants.php';
 require_once 'config/https.php';
 require_once 'config/database.php';
 require_once 'core/SecurityService.php';
+require_once 'core/AuditLog.php';
 
 header('Content-Type: application/json');
 
@@ -34,6 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['userId'] = $user['userId'];
             $_SESSION['role'] = $user['role'];
             $_SESSION['username'] = $user['username'];
+
+            $audit = new AuditLog();
+            $audit->log($user['userId'], 'LOGIN_SUCCESS', $user['userId']);
 
             $redirect = '';
             if ($user['role'] == 'ADMIN') $redirect = 'modules/admin/dashboard.php';

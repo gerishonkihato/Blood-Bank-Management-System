@@ -89,7 +89,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch current inventory
-$inventoryStmt = $conn->query("SELECT * FROM inventory ORDER BY bloodType");
+$searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
+if ($searchTerm) {
+    $searchParam = '%' . $searchTerm . '%';
+    $inventoryStmt = $conn->prepare("SELECT * FROM inventory WHERE bloodType LIKE ? ORDER BY bloodType");
+    $inventoryStmt->execute([$searchParam]);
+} else {
+    $inventoryStmt = $conn->query("SELECT * FROM inventory ORDER BY bloodType");
+}
 $inventory = $inventoryStmt->fetchAll();
 
 // Fetch blood units for tracking
@@ -170,7 +177,27 @@ $history = $historyStmt->fetchAll();
             
             <!-- Current Inventory Status -->
             <div class="card">
-                <h2>📊 Current Blood Inventory</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px;">
+                    <h2 style="margin: 0;">📊 Current Blood Inventory</h2>
+                    <form method="GET" style="display: flex; gap: 10px; flex: 1; max-width: 400px;">
+                        <select name="search" style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">All Blood Types</option>
+                            <option value="A+" <?php echo $searchTerm === 'A+' ? 'selected' : ''; ?>>A+</option>
+                            <option value="A-" <?php echo $searchTerm === 'A-' ? 'selected' : ''; ?>>A-</option>
+                            <option value="B+" <?php echo $searchTerm === 'B+' ? 'selected' : ''; ?>>B+</option>
+                            <option value="B-" <?php echo $searchTerm === 'B-' ? 'selected' : ''; ?>>B-</option>
+                            <option value="AB+" <?php echo $searchTerm === 'AB+' ? 'selected' : ''; ?>>AB+</option>
+                            <option value="AB-" <?php echo $searchTerm === 'AB-' ? 'selected' : ''; ?>>AB-</option>
+                            <option value="O+" <?php echo $searchTerm === 'O+' ? 'selected' : ''; ?>>O+</option>
+                            <option value="O-" <?php echo $searchTerm === 'O-' ? 'selected' : ''; ?>>O-</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary" style="padding: 8px 16px;">🔍 Filter</button>
+                    </form>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="export_inventory.php?format=csv&search=<?php echo urlencode($searchTerm); ?>" class="btn btn-success" style="padding: 8px 14px; text-decoration: none; font-size: 12px;">📥 CSV</a>
+                        <a href="export_inventory.php?format=pdf&search=<?php echo urlencode($searchTerm); ?>" class="btn btn-info" style="padding: 8px 14px; text-decoration: none; font-size: 12px;">📄 PDF</a>
+                    </div>
+                </div>
                 <div class="inventory-grid">
                     <?php foreach ($inventory as $item): ?>
                     <div class="inventory-card <?php echo ($item['unitsAvailable'] < 10) ? 'low-stock' : ''; ?>">

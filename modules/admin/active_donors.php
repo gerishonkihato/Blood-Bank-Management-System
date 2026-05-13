@@ -77,13 +77,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['donorId'])) {
     }
 }
 
-// Get active donors list
-$donorsStmt = $conn->prepare('SELECT d.donorId, d.encryptedName, d.bloodGroup, d.rhFactor, d.lastDonationDate, d.status, u.username
-    FROM donors d
-    JOIN users u ON d.userId = u.userId
-    WHERE d.status = ?
-    ORDER BY d.lastDonationDate DESC');
-$donorsStmt->execute(['ACTIVE']);
+// Get active donors list with search functionality
+$searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
+if (!empty($searchTerm)) {
+    $searchParam = '%' . $searchTerm . '%';
+    $donorsStmt = $conn->prepare('SELECT d.donorId, d.encryptedName, d.bloodGroup, d.rhFactor, d.lastDonationDate, d.status, u.username
+        FROM donors d
+        JOIN users u ON d.userId = u.userId
+        WHERE d.status = ? AND (u.username LIKE ? OR CONCAT(d.bloodGroup, d.rhFactor) LIKE ?)
+        ORDER BY d.lastDonationDate DESC');
+    $donorsStmt->execute(['ACTIVE', $searchParam, $searchParam]);
+} else {
+    $donorsStmt = $conn->prepare('SELECT d.donorId, d.encryptedName, d.bloodGroup, d.rhFactor, d.lastDonationDate, d.status, u.username
+        FROM donors d
+        JOIN users u ON d.userId = u.userId
+        WHERE d.status = ?
+        ORDER BY d.lastDonationDate DESC');
+    $donorsStmt->execute(['ACTIVE']);
+}
 $activeDonors = $donorsStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get recent donation rows for display
@@ -119,7 +130,20 @@ $audit->log($_SESSION['userId'], 'ADMIN_ACTIVE_DONORS_ACCESS', $_SESSION['userId
             <?php endif; ?>
 
             <div class="card">
-                <h2> Active Donors</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px;">
+                    <h2 style="margin: 0;">🩸 Active Donors</h2>
+                    <form method="GET" style="display: flex; gap: 10px; flex: 1; max-width: 500px;">
+                        <input type="text" name="search" placeholder="Search by donor name or blood type (e.g., A+, AB-, John)..." value="<?php echo htmlspecialchars($searchTerm); ?>" style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button type="submit" class="btn btn-primary" style="padding: 8px 16px;">🔍 Search</button>
+                        <?php if ($searchTerm): ?>
+                            <a href="active_donors.php" class="btn" style="padding: 8px 16px; background: #95a5a6; color: white; text-decoration: none; border-radius: 4px;">✕ Clear</a>
+                        <?php endif; ?>
+                    </form>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="export_donors.php?format=csv&search=<?php echo urlencode($searchTerm); ?>" class="btn btn-success" style="padding: 8px 14px; text-decoration: none; font-size: 12px;">📥 CSV</a>
+                        <a href="export_donors.php?format=pdf&search=<?php echo urlencode($searchTerm); ?>" class="btn btn-info" style="padding: 8px 14px; text-decoration: none; font-size: 12px;">📄 PDF</a>
+                    </div>
+                </div>
                 <table>
                     <thead>
                         <tr>
@@ -131,6 +155,9 @@ $audit->log($_SESSION['userId'], 'ADMIN_ACTIVE_DONORS_ACCESS', $_SESSION['userId
                         </tr>
                     </thead>
                     <tbody>
+                        <?php if (empty($activeDonors)): ?>
+                            <tr><td colspan="5" style="text-align: center; padding: 20px; color: #7f8c8d;">No donors found</td></tr>
+                        <?php endif; ?>
                         <?php foreach ($activeDonors as $d): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($d['username']); ?></td>

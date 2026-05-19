@@ -33,6 +33,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$username || !$password || !$confirm) {
             $error = 'All fields are required.';
+        } elseif (!preg_match('/^(?=.*[A-Za-z])[A-Za-z0-9]+$/', $username)) {
+            $error = 'Invalid username. Use letters or letters+numbers; cannot be numeric-only.';
+        } elseif (strlen($password) < 8) {
+            $error = 'Password must be at least 8 characters long.';
         } elseif ($password !== $confirm) {
             $error = 'Passwords do not match.';
         } else {

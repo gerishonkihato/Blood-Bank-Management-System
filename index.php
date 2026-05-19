@@ -13,6 +13,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'];
     $postRole = $_POST['role'] ?? '';
 
+    // Basic validation: username must be alphanumeric with at least one letter; password min length 8
+    if (!preg_match('/^(?=.*[A-Za-z])[A-Za-z0-9]+$/', $username)) {
+        $error = 'Invalid username. Use letters or letters+numbers; cannot be numeric-only.';
+    } elseif (strlen($password) < 8) {
+        $error = 'Password must be at least 8 characters long.';
+    } else {
+    
     $db = new Database();
     $conn = $db->getConnection();
     $sec = new SecurityService();
@@ -39,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     } else {
         $error = "Invalid credentials";
+    }
     }
 }
 
